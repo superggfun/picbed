@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
@@ -61,4 +62,27 @@ func PostFile(filename string) ([]byte, error) {
 		return b, err
 	}
 	return body, nil
+}
+
+func Weibo(cookie string, base64 string) ([]byte, error) {
+	client := &http.Client{}
+	d := strings.NewReader(fmt.Sprintf("---\r\nContent-Disposition: form-data; name=\"b64_data\"\r\n\r\n%v\r\n-----", base64))
+	url := `https://picupload.weibo.com/interface/pic_upload.php?ori=1&mime=image%2Fjpeg&data=base64&url=0&markpos=1&logo=&nick=0&marks=1&app=miniblog`
+	req, err := http.NewRequest("POST", url, d)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("content-type", "multipart/form-data; boundary=-")
+	req.Header.Set("cookie", cookie)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return bodyText[149:], nil
 }
